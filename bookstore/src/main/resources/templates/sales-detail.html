@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>販売明細</title>
+</head>
+<body>
+    <div th:fragment="detail">
+        <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+            <thead>
+                <tr>
+                    <th style="background: #F5F5F5; padding: 12px; text-align: left; border-bottom: 1px solid #E0E0E0; color: #000000; font-weight: 600;">商品名</th>
+                    <th style="background: #F5F5F5; padding: 12px; text-align: right; border-bottom: 1px solid #E0E0E0; color: #000000; font-weight: 600;">数量</th>
+                    <th style="background: #F5F5F5; padding: 12px; text-align: right; border-bottom: 1px solid #E0E0E0; color: #000000; font-weight: 600;">単価</th>
+                    <th style="background: #F5F5F5; padding: 12px; text-align: right; border-bottom: 1px solid #E0E0E0; color: #000000; font-weight: 600;">小計</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="detail : ${header.details}">
+                    <td th:text="${detail.product.name}" style="padding: 12px; border-bottom: 1px solid #E0E0E0;">商品名</td>
+                    <td th:text="${detail.quantity}" style="padding: 12px; text-align: right; border-bottom: 1px solid #E0E0E0;">1</td>
+                    <td th:text="${#numbers.formatInteger(detail.salePrice, 3, 'COMMA') + '円'}" style="padding: 12px; text-align: right; border-bottom: 1px solid #E0E0E0;">1000円</td>
+                    <td th:text="${#numbers.formatInteger(detail.quantity * detail.salePrice, 3, 'COMMA') + '円'}" style="padding: 12px; text-align: right; border-bottom: 1px solid #E0E0E0;">1000円</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" style="padding: 16px 12px; text-align: right; font-weight: 600; border-top: 2px solid #000000; color: #000000;">合計</td>
+                    <td th:text="${#numbers.formatInteger(header.totalAmount, 3, 'COMMA') + '円'}" style="padding: 16px 12px; text-align: right; font-weight: 600; border-top: 2px solid #000000; color: #000000;">1000円</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</body>
+</html>

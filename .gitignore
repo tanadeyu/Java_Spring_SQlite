@@ -1,0 +1,29 @@
+# IDE
+.metadata/
+.settings/
+.classpath
+.project
+.idea/
+*.iml
+.vscode/
+
+# Build
+target/
+*.class
+*.jar
+*.war
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# References (external documentation)
+References/
