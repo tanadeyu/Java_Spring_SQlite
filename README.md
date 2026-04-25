@@ -114,12 +114,114 @@ com.example.bookstore/
 - エンティティの保存・更新・削除
 
 #### Repository（データアクセス層）
-データベースへのアクセスを担当します。Spring Data JPAによって、SQLを書かずにCRUD操作が可能です。
+データベースへのアクセスを担当します。Spring Data JPAによって、メソッド名から基本的なSQLを自動生成できます。
 
-**役割:**
-- データベースとのやり取り
-- CRUD操作（Create, Read, Update, Delete）
-- カスタムクエリの実行
+**基本的なSQL操作（実装済み）:**
+
+| やりたいこと | SQL | Repository（Java） | 対応するソース |
+|-------------|-----|-------------------|---------------|
+| IDで商品を探す | `SELECT * FROM products WHERE id = ?` | `findById(1L)` | `JpaRepository`から継承 |
+| 全商品を取得 | `SELECT * FROM products` | `findAll()` | `JpaRepository`から継承 |
+| 名前で検索 | `SELECT * FROM products WHERE name LIKE ?` | `findByNameContaining("Java")` | [↓コード例1] |
+| 在庫不足を探す | `SELECT * FROM products WHERE stock < ?` | `findByStockLessThan(10)` | [↓コード例2] |
+| 新規登録 | `INSERT INTO products ...` | `save(newProduct)` | `JpaRepository`から継承 |
+| 更新 | `UPDATE products SET ...` | `save(existingProduct)` | `JpaRepository`から継承 |
+| 削除 | `DELETE FROM products WHERE id = ?` | `deleteById(1L)` | `JpaRepository`から継承 |
+
+**実際のソースコード:**
+
+```java
+// bookstore/src/main/java/com/example/bookstore/repository/ProductRepository.java
+
+@Repository
+public interface ProductRepository extends JpaRepository<Product, Long> {
+
+    // [コード例1] 名前で検索（部分一致）
+    // 自動生成されるSQL: SELECT * FROM products WHERE name LIKE ?
+    List<Product> findByNameContaining(String name);
+
+    // [コード例2] 在庫不足を探す
+    // 自動生成されるSQL: SELECT * FROM products WHERE stock < ?
+    List<Product> findByStockLessThan(Integer stock);
+}
+```
+
+**💡 ポイント: メソッド名を書くだけで、Spring Data JPAがSQLを自動生成します。**
+
+**SQL自動生成の仕組み:**
+
+```
+メソッド名: findByNameContaining
+           ↓
+Spring Data JPAが解析
+           ↓
+┌─────────────────────────────────┐
+│ find = SELECT文を生成            │
+│ By = WHERE句の開始               │
+│ Name = WHERE name                │
+│ Containing = LIKE を使用         │
+└─────────────────────────────────┘
+           ↓
+生成されるSQL: SELECT * FROM products WHERE name LIKE ?
+```
+
+**例:**
+- `findByStockLessThan(10)` → `WHERE stock < 10`
+- `findByNameContaining("Java")` → `WHERE name LIKE '%Java%'`
+- `findById(1L)` → `WHERE id = 1`
+
+**メソッド名のルール:**
+| プレフィックス | 意味 | 例 |
+|-------------|------|-----|
+| `findBy` | WHERE句で検索 | `findByName()` |
+| `countBy` | 件数をカウント | `countByStock()` |
+| `existsBy` | 存在チェック | `existsByName()` |
+| `deleteBy` | 削除 | `deleteByExpired()` |
+
+---
+
+**具体例: 顧客一覧画面のデータ取得**
+
+```
+1. ユーザーが「顧客管理」をクリック
+   ↓
+2. Controllerが呼ばれる
+   @GetMapping
+   public String list(Model model) {
+       model.addAttribute("customers", customerService.findAll());
+       return "customers";
+   }
+   ↓
+3. ServiceがRepositoryを呼ぶ
+   public List<Customer> findAll() {
+       return customerRepository.findAll();
+   }
+   ↓
+4. Spring Data JPAがSQLを自動生成
+   findAll() → SELECT * FROM customers
+   ↓
+5. データベースから全顧客を取得
+   ↓
+6. 画面（customers.html）に表示
+```
+
+**実際のソースコード:**
+- Controller: `CustomerController.java`（40行目）
+- Service: `CustomerService.java`（39行目）
+- Repository: `CustomerRepository.java`（`JpaRepository`を継承）
+
+**💡 ポイント:**
+- メソッド名からSQLを自動生成（`findByStockLessThan` → `WHERE stock < ?`）
+- `JpaRepository`を継承するだけで基本的なCRUDが使える
+- SQLを直接書かずに型安全なデータアクセスが可能
+
+**応用（分析クエリ）:**
+```java
+// 売上ランキング（JOIN + GROUP BY + 集計関数）
+@Query("SELECT new com.example.bookstore.dto.ProductRanking(p.name, SUM(s.quantity * s.salePrice)) " +
+       "FROM Sale s JOIN s.product p GROUP BY p ORDER BY SUM(s.quantity * s.salePrice) DESC")
+List<ProductRanking> findSalesRanking();
+```
 
 #### Entity（データモデル層）
 データベースのテーブルと1対1で対応するJavaクラスです。JPA（Hibernate）によって、オブジェクトとリレーショナルデータベースの変換を自動化します。
